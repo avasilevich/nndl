@@ -37,8 +37,14 @@ biases = {
 
 def multilayer_perceptron(x):
     first_layer = tf.add(tf.matmul(x, weights['first']), biases['first'])
+    first_layer = tf.nn.relu(first_layer)
+
     secnd_layer = tf.add(tf.matmul(first_layer, weights['secnd']), biases['secnd'])
+    secnd_layer = tf.nn.relu(secnd_layer)
+
     third_layer = tf.add(tf.matmul(secnd_layer, weights['third']), biases['third'])
+    third_layer = tf.nn.relu(third_layer)
+
     out_layer = tf.matmul(third_layer, weights['output']) + biases['output']
 
     return out_layer
@@ -74,7 +80,7 @@ with tf.Session() as sess:
             print("Epoch:", '%04d' % (epoch+1), "cost={:.9f}".format(avg_cost))
     print("Optimization Finished!")
 
-    pred = tf.nn.relu(logits)
+    pred = tf.nn.softmax(logits)
     correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(Y, 1))
 
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
