@@ -1,0 +1,83 @@
+import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
+mnist = input_data.read_data_sets("/tmp/data/", one_hot=True)
+
+
+learning_rate = 0.001
+training_epoches = 1000
+batch_size = 100
+step = 50
+
+
+input_size = 784
+hidden_first_size = 256
+hidden_secnd_size = 256
+hidden_third_size = 256
+output_size = 10
+
+
+X = tf.placeholder("float", [None, input_size])
+Y = tf.placeholder("float", [None, output_size])
+
+
+weights = {
+    'first'  : tf.Variable(tf.random_normal([input_size, hidden_first_size])),
+    'secnd'  : tf.Variable(tf.random_normal([hidden_first_size, hidden_secnd_size])),
+    'third'  : tf.Variable(tf.random_normal([hidden_secnd_size, hidden_third_size])),
+    'output' : tf.Variable(tf.random_normal([hidden_third_size, output_size]))
+}
+
+biases = {
+    'first'  : tf.Variable(tf.random_normal([hidden_first_size])),
+    'secnd'  : tf.Variable(tf.random_normal([hidden_secnd_size])),
+    'third'  : tf.Variable(tf.random_normal([hidden_third_size])),
+    'output' : tf.Variable(tf.random_normal([output_size]))
+}
+
+
+def multilayer_perceptron(x):
+    first_layer = tf.add(tf.matmul(x, weights['first']), biases['first'])
+    secnd_layer = tf.add(tf.matmul(first_layer, weights['secnd']), biases['secnd'])
+    third_layer = tf.add(tf.matmul(secnd_layer, weights['third']), biases['third'])
+    out_layer = tf.matmul(third_layer, weights['output']) + biases['output']
+
+    return out_layer
+
+
+logits = multilayer_perceptron(X)
+
+
+loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
+    logits=logits, labels=Y))
+optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+train_op = optimizer.minimize(loss_op)
+
+init = tf.global_variables_initializer()
+
+
+with tf.Session() as sess:
+    sess.run(init)
+
+    # Training cycle
+    for epoch in range(training_epoches):
+        avg_cost = 0.
+        total_batch = int(mnist.train.num_examples/batch_size)
+        # Loop over all batches
+        for i in range(total_batch):
+            batch_x, batch_y = mnist.train.next_batch(batch_size)
+            # Run optimization op (backprop) and cost op (to get loss value)
+            _, c = sess.run([train_op, loss_op], feed_dict={X: batch_x,
+                                                            Y: batch_y})
+            # Compute average loss
+            avg_cost += c / total_batch
+        # Display logs per epoch step
+        if epoch % step == 0:
+            print("Epoch:", '%04d' % (epoch+1), "cost={:.9f}".format(avg_cost))
+    print("Optimization Finished!")
+
+    # Test model
+    pred = tf.nn.softmax(logits)  # Apply softmax to logits
+    correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(Y, 1))
+    # Calculate accuracy
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+    print("Accuracy:", accuracy.eval({X: mnist.test.images, Y: mnist.test.labels}))
