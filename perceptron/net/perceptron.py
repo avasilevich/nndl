@@ -21,10 +21,18 @@ Y = tf.placeholder("float", [None, output_size])
 
 
 weights = {
-    'first'  : tf.Variable(tf.random_normal([input_size, hidden_first_size])),
-    'secnd'  : tf.Variable(tf.random_normal([hidden_first_size, hidden_secnd_size])),
-    'third'  : tf.Variable(tf.random_normal([hidden_secnd_size, hidden_third_size])),
+    'first'  : tf.get_variable("w_first", shape=[input_size, hidden_first_size],
+                        initializer=tf.contrib.layers.variance_scaling_initializer()),
+    'secnd'  : tf.get_variable("w_secnd", shape=[hidden_first_size, hidden_secnd_size],
+                        initializer=tf.contrib.layers.variance_scaling_initializer()),
+    'third'  : tf.get_variable("w_third", shape=[hidden_secnd_size, hidden_third_size],
+                        initializer=tf.contrib.layers.variance_scaling_initializer()),
     'output' : tf.Variable(tf.random_normal([hidden_third_size, output_size]))
+
+#   'first'  : tf.Variable(tf.random_normal([input_size, hidden_first_size])),
+#   'secnd'  : tf.Variable(tf.random_normal([hidden_first_size, hidden_secnd_size])),
+#   'third'  : tf.Variable(tf.random_normal([hidden_secnd_size, hidden_third_size])),
+#   'output' : tf.Variable(tf.random_normal([hidden_third_size, output_size]))
 }
 
 biases = {
@@ -36,16 +44,11 @@ biases = {
 
 
 def multilayer_perceptron(x):
-    first_layer = tf.add(tf.matmul(x, weights['first']), biases['first'])
-    first_layer = tf.nn.relu(first_layer)
+    first_layer = tf.nn.relu_layer(x, weights['first'], biases['first'])
+    secnd_layer = tf.nn.relu_layer(first_layer, weights['secnd'], biases['secnd'])
+    third_layer = tf.nn.relu_layer(secnd_layer, weights['third'], biases['third'])
 
-    secnd_layer = tf.add(tf.matmul(first_layer, weights['secnd']), biases['secnd'])
-    secnd_layer = tf.nn.relu(secnd_layer)
-
-    third_layer = tf.add(tf.matmul(secnd_layer, weights['third']), biases['third'])
-    third_layer = tf.nn.relu(third_layer)
-
-    out_layer = tf.matmul(third_layer, weights['output']) + biases['output']
+    out_layer = tf.add(tf.matmul(third_layer, weights['output']), biases['output'])
 
     return out_layer
 
