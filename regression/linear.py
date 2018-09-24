@@ -9,11 +9,6 @@ epoch_num = 1000
 display_step = 50
 
 
-x_input = rng.rand(100, 1)
-noise = rng.normal(scale=0.1, size=(100, 1))
-y_input = np.reshape(5 * x_input  + 2 + noise, (-1))
-
-
 def generate_data(example=False):
     x_input = 0
     y_input = 0
