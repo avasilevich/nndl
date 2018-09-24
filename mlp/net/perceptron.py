@@ -55,6 +55,7 @@ def multilayer_perceptron(x):
 
 logits = multilayer_perceptron(X)
 
+saver = tf.train.Saver(max_to_keep=1)
 
 loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
     logits=logits, labels=Y))
@@ -79,6 +80,7 @@ with tf.Session() as sess:
 
             avg_cost += c / total_batch
 
+        saver.save(sess, "./mlp_model")
         if epoch % step == 0:
             print("Epoch:", '%04d' % (epoch+1), "cost={:.9f}".format(avg_cost))
     print("Optimization Finished!")
