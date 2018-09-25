@@ -32,7 +32,7 @@ def linear():
     w_histo = tf.summary.histogram('weights', W)
     b_histo = tf.summary.histogram('biases', b)
 
-    x_input, y_input = generate_data()
+    x_input, y_input = generate_data(example=True)
 
     X = tf.placeholder(tf.float32, name="input_x")
     Y = tf.placeholder(tf.float32, name="input_y")

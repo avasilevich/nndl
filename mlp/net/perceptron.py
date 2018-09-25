@@ -1,5 +1,7 @@
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
+
+
 mnist = input_data.read_data_sets("/tmp/data/", one_hot=True)
 
 
@@ -7,6 +9,7 @@ learning_rate = 0.001
 training_epoches = 1000
 batch_size = 100
 step = 50
+dropout = 0.75
 
 
 input_size = 784
@@ -18,6 +21,7 @@ output_size = 10
 
 X = tf.placeholder("float", [None, input_size])
 Y = tf.placeholder("float", [None, output_size])
+keep_prob = tf.placeholder(tf.float32)
 
 
 weights = {
@@ -28,11 +32,6 @@ weights = {
     'third'  : tf.get_variable("w_third", shape=[hidden_secnd_size, hidden_third_size],
                         initializer=tf.contrib.layers.variance_scaling_initializer()),
     'output' : tf.Variable(tf.random_normal([hidden_third_size, output_size]))
-
-#   'first'  : tf.Variable(tf.random_normal([input_size, hidden_first_size])),
-#   'secnd'  : tf.Variable(tf.random_normal([hidden_first_size, hidden_secnd_size])),
-#   'third'  : tf.Variable(tf.random_normal([hidden_secnd_size, hidden_third_size])),
-#   'output' : tf.Variable(tf.random_normal([hidden_third_size, output_size]))
 }
 
 biases = {
@@ -47,6 +46,10 @@ def multilayer_perceptron(x):
     first_layer = tf.nn.relu_layer(x, weights['first'], biases['first'])
     secnd_layer = tf.nn.relu_layer(first_layer, weights['secnd'], biases['secnd'])
     third_layer = tf.nn.relu_layer(secnd_layer, weights['third'], biases['third'])
+
+    first_layer = tf.nn.dropout(first_layer, dropout)
+    secnd_layer = tf.nn.dropout(secnd_layer, dropout)
+    third_layer = tf.nn.dropout(third_layer, dropout)
 
     out_layer = tf.add(tf.matmul(third_layer, weights['output']), biases['output'])
 
@@ -76,17 +79,25 @@ with tf.Session() as sess:
             batch_x, batch_y = mnist.train.next_batch(batch_size)
 
             _, c = sess.run([train_op, loss_op], feed_dict={X: batch_x,
-                                                            Y: batch_y})
+                                                            Y: batch_y,
+                                                            keep_prob: 0.8})
 
             avg_cost += c / total_batch
 
-        saver.save(sess, "./mlp_model")
         if epoch % step == 0:
             print("Epoch:", '%04d' % (epoch+1), "cost={:.9f}".format(avg_cost))
+
     print("Optimization Finished!")
+
+    saver.save(sess, "./mlp_model")
 
     pred = tf.nn.softmax(logits)
     correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(Y, 1))
 
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
-    print("Accuracy:", accuracy.eval({X: mnist.test.images, Y: mnist.test.labels}))
+    print("Accuracy (learn): ", accuracy.eval({X: mnist.train.images,
+                                               Y: mnist.train.labels,
+                                               keep_prob: 1.0}))
+    print("Accuracy (test):  ", accuracy.eval({X: mnist.test.images,
+                                               Y: mnist.test.labels,
+                                               keep_prob: 1.0}))

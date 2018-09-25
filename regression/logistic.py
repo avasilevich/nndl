@@ -1,6 +1,8 @@
 import tensorflow as tf
-import numpy
-import matplotlib.pyplot as plt
+from tensorflow.examples.tutorials.mnist import input_data
+
+
+mnist = input_data.read_data_sets("/tmp/data/", one_hot=True)
 
 
 def logistic_regression():
@@ -10,51 +12,53 @@ def logistic_regression():
     batch_size = 100
     display_step = 1
 
-    # tf Graph Input
-    x = tf.placeholder(tf.float32, [None, 784])  # mnist data image of shape 28*28=784
-    y = tf.placeholder(tf.float32, [None, 10])  # 0-9 digits recognition => 10 classes
+    x = tf.placeholder(tf.float32, [None, 784])
+    y = tf.placeholder(tf.float32, [None, 10])
 
-    # Set model weights
-    W = tf.Variable(tf.zeros([784, 10]))
-    b = tf.Variable(tf.zeros([10]))
+    W = tf.Variable(tf.zeros([784, 10]), name="Weights")
+    b = tf.Variable(tf.zeros([10]), name="Biases")
 
-    # Construct model
-    pred = tf.nn.softmax(tf.matmul(x, W) + b)  # Softmax
+    pred = tf.nn.softmax(tf.matmul(x, W) + b)
 
-    # Minimize error using cross entropy
     cost = tf.reduce_mean(-tf.reduce_sum(y * tf.log(pred), reduction_indices=1))
-    # Gradient Descent
+
     optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(cost)
 
-    # Initialize the variables (i.e. assign their default value)
+    acc = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
+    acc = tf.reduce_mean(tf.cast(acc, tf.float32))
+
     init = tf.global_variables_initializer()
 
-    # Start training
-    with tf.Session() as sess:
+    tf.summary.scalar("loss", cost)
+    tf.summary.scalar("accuracy", acc)
+    merged_summary_op = tf.summary.merge_all()
 
-        # Run the initializer
-        sess.run(init)
+    with tf.Session() as session:
+        session.run(init)
 
-        # Training cycle
+        summary_writer = tf.summary.FileWriter("logistic_logs", graph=tf.get_default_graph())
+
         for epoch in range(training_epochs):
             avg_cost = 0.
             total_batch = int(mnist.train.num_examples / batch_size)
-            # Loop over all batches
+
             for i in range(total_batch):
                 batch_xs, batch_ys = mnist.train.next_batch(batch_size)
-                # Run optimization op (backprop) and cost op (to get loss value)
-                _, c = sess.run([optimizer, cost], feed_dict={x: batch_xs,
+                _, c, summary = session.run([optimizer, cost, merged_summary_op], feed_dict={x: batch_xs,
                                                               y: batch_ys})
-                # Compute average loss
+
+                summary_writer.add_summary(summary, epoch * total_batch + i)
                 avg_cost += c / total_batch
-            # Display logs per epoch step
+
             if (epoch + 1) % display_step == 0:
                 print("Epoch:", '%04d' % (epoch + 1), "cost=", "{:.9f}".format(avg_cost))
 
         print("Optimization Finished!")
 
-        # Test model
         correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
-        # Calculate accuracy
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         print("Accuracy:", accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
+
+
+if __name__ == "__main__":
+    logistic_regression()
